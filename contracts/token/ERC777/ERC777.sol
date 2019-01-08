@@ -9,7 +9,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "openzeppelin-solidity/contracts/utils/ReentrancyGuard.sol";
 import "erc820/contracts/ERC820Client.sol";
 
-import "../../CertificateController/CertificateController.sol";
+import "contract-certificate-controller/contracts/CertificateController.sol";
 
 import "./IERC777.sol";
 import "./IERC777TokensSender.sol";
