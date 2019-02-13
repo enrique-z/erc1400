@@ -1682,9 +1682,13 @@ content-type@1.0.4, content-type@~1.0.4:
   resolved "https://registry.yarnpkg.com/content-type/-/content-type-1.0.4.tgz#e138cc75e040c727b1966fe5e5f8c9aee256fe3b"
   integrity sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA==
 
-"contract-certificate-controller@git+https://gitlab.com/ConsenSys/client/fr/dauriel/contract-certificate-controller#70e646dceff444076291348e733e70c02accd372":
+"contract-certificate-controller@git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#1cecd0db170a0dd033e9e36262e6da2f004d6fb9":
   version "0.1.0-dev"
-  resolved "git+https://gitlab.com/ConsenSys/client/fr/dauriel/contract-certificate-controller#70e646dceff444076291348e733e70c02accd372"
+  resolved "git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#1cecd0db170a0dd033e9e36262e6da2f004d6fb9"
+  dependencies:
+    openzeppelin-solidity "git://github.com/OpenZeppelin/openzeppelin-solidity#06e265b38d3e9daeaa7b33f9035c700d6bc0c6a0"
+    truffle "5.0.1"
+    truffle-hdwallet-provider "1.0.1"
 
 conventional-changelog-angular@^1.6.6:
   version "1.6.6"
@@ -5382,6 +5386,10 @@ opener@~1.4.0:
 "openzeppelin-solidity@git+https://github.com/OpenZeppelin/openzeppelin-solidity#06e265b38d3e9daeaa7b33f9035c700d6bc0c6a0":
   version "2.0.0"
   resolved "git+https://github.com/OpenZeppelin/openzeppelin-solidity#06e265b38d3e9daeaa7b33f9035c700d6bc0c6a0"
+
+"openzeppelin-solidity@git://github.com/OpenZeppelin/openzeppelin-solidity#06e265b38d3e9daeaa7b33f9035c700d6bc0c6a0":
+  version "2.0.0"
+  resolved "git://github.com/OpenZeppelin/openzeppelin-solidity#06e265b38d3e9daeaa7b33f9035c700d6bc0c6a0"
 
 optimist@0.6.x, optimist@^0.6.1:
   version "0.6.1"
