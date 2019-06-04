@@ -52,7 +52,7 @@ contract ERC1400ERC20 is IERC20, ERC1400 {
     public
     ERC1400(name, symbol, granularity, controllers, certificateSigner, tokenDefaultPartitions)
   {
-    setInterfaceImplementation("ERC20Token", this);
+    setInterfaceImplementation("ERC20Token", address(this));
   }
 
   /**

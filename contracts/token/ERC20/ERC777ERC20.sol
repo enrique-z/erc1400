@@ -51,7 +51,7 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
     public
     ERC777(name, symbol, granularity, controllers, certificateSigner)
   {
-    setInterfaceImplementation("ERC20Token", this);
+    setInterfaceImplementation("ERC20Token", address(this));
   }
 
   /**
