@@ -34,7 +34,7 @@ This repo contains security token smart contract implementations used by the Dau
 The current capital market still needs to overcome a few pain points:
  - Today, it is cumbersome and costly to issue an asset.
  - Once issued, the assets are mainly reserved for high-ticket investors.
- - Finally, those asset are not easily tradable, which strongly limits the secondary market possibilities.
+ - Finally, those assets are not easily tradable, which strongly limits the secondary market possibilities.
 
 With the Dauriel Network, we want to tokenize the capital market to tackle those pain points. In the new system, we imagine:
  - An asset issuance will be faster, simpler but also cheaper than today.
@@ -155,7 +155,7 @@ This property allows to perform corporate actions, like mergers and acquisitions
 The original submission with discussion can be found at: [github.com/ethereum/EIPs/issues/1411](https://github.com/ethereum/EIPs/issues/1411).
 
 We've performed a few updates compared to the original submission, mainly to fit with business requirements + to save gas cost of contract deployment:
- - Compatibility with ERC777 as all ERC777 properties are business requirements for financial asset tokenization (incl. send/receive hooks and ERC820 which are used to ensure transfer atomicity).
+ - Compatibility with ERC777 as all ERC777 properties are business requirements for financial asset tokenization (incl. send/receive hooks and ERC1820 which are used to ensure transfer atomicity).
  - Modification of view functions ('canTransferByPartition', 'canOperatorTransferByPartition') as consequence of our certificate design choice: the view functions need to have the exact same parameters as 'transferByPartition' and 'operatorTransferByPartition' in order to be in measure to confirm the certificate's validity.
  - Removal of controller functions ('controllerTransfer' and 'controllerRedeem') and events ('ControllerTransfer' and 'ControllerRedemption') to save gas cost of contract deployment. Those controller functionnalities have been included in 'transferByPartition' and 'redeemByPartition' functions instead.
  - Split of ERC1400 functions into 2 interfaces (IERC1410 for asset transfer logic + IERC1400 for asset issuance/redemption logic) for better readability.
