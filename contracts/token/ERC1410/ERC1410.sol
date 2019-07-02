@@ -192,7 +192,7 @@ contract ERC1410 is IERC1410, ERC777 {
   /**
    * [ERC1410 INTERFACE (9/10)]
    * @dev Remove the right of the operator address to be an operator on a given
-   * partition for 'msg.sender' and to transfer and redeem tokens on its behalf.
+   * partition for 'msg.sender' and to transfer and burn tokens on its behalf.
    * @param partition Name of the partition.
    * @param operator Address to rescind as an operator on given partition for 'msg.sender'.
    */
@@ -265,7 +265,7 @@ contract ERC1410 is IERC1410, ERC777 {
     }
 
     _removeTokenFromPartition(from, fromPartition, value);
-    _transferWithData(fromPartition, operator, from, to, value, data, operatorData, true);
+    _send(fromPartition, operator, from, to, value, data, operatorData, true);
     _addTokenToPartition(to, toPartition, value);
 
     emit TransferByPartition(fromPartition, operator, from, to, value, data, operatorData);
@@ -411,7 +411,7 @@ contract ERC1410 is IERC1410, ERC777 {
    * @param value Number of tokens to transfer.
    * @param data Information attached to the transfer, by the token holder. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function transferWithData(address to, uint256 value, bytes calldata data)
+  function send(address to, uint256 value, bytes calldata data)
     external
     isValidCertificate(data)
   {
@@ -427,7 +427,7 @@ contract ERC1410 is IERC1410, ERC777 {
    * @param data Information attached to the transfer, and intended for the token holder ('from'). [CAN CONTAIN THE DESTINATION PARTITION]
    * @param operatorData Information attached to the transfer by the operator. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function transferFromWithData(address from, address to, uint256 value, bytes calldata data, bytes calldata operatorData)
+  function operatorSend(address from, address to, uint256 value, bytes calldata data, bytes calldata operatorData)
     external
     isValidCertificate(operatorData)
   {
@@ -440,16 +440,16 @@ contract ERC1410 is IERC1410, ERC777 {
 
   /**
    * [NOT MANDATORY FOR ERC1410 STANDARD][OVERRIDES ERC777 METHOD]
-   * @dev Empty function to erase ERC777 redeem() function since it doesn't handle partitions.
+   * @dev Empty function to erase ERC777 burn() function since it doesn't handle partitions.
    */
-  function redeem(uint256 /*value*/, bytes calldata /*data*/) external { // Comments to avoid compilation warnings for unused variables.
+  function burn(uint256 /*value*/, bytes calldata /*data*/) external { // Comments to avoid compilation warnings for unused variables.
   }
 
   /**
    * [NOT MANDATORY FOR ERC1410 STANDARD][OVERRIDES ERC777 METHOD]
-   * @dev Empty function to erase ERC777 redeemFrom() function since it doesn't handle partitions.
+   * @dev Empty function to erase ERC777 operatorBurn() function since it doesn't handle partitions.
    */
-  function redeemFrom(address /*from*/, uint256 /*value*/, bytes calldata /*data*/, bytes calldata /*operatorData*/) external { // Comments to avoid compilation warnings for unused variables.
+  function operatorBurn(address /*from*/, uint256 /*value*/, bytes calldata /*data*/, bytes calldata /*operatorData*/) external { // Comments to avoid compilation warnings for unused variables.
   }
 
   /**

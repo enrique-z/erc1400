@@ -6,14 +6,14 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
-import "../ERC777/ERC777Issuable.sol";
+import "../ERC777/ERC777Mintable.sol";
 
 
 /**
  * @title ERC777ERC20
  * @dev ERC777 with ERC20 retrocompatibility
  */
-contract ERC777ERC20 is IERC20, ERC777Issuable {
+contract ERC777ERC20 is IERC20, ERC777Mintable {
 
   // Mapping from (tokenHolder, spender) to allowed value.
   mapping (address => mapping (address => uint256)) internal _allowed;
@@ -69,7 +69,7 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
    * ERC777 native transfer functions MUST set this parameter to 'true', and backwards compatible ERC20 transfer
    * functions SHOULD set this parameter to 'false'.
    */
-  function _transferWithData(
+  function _send(
     bytes32 partition,
     address operator,
     address from,
@@ -81,7 +81,7 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
   )
    internal
   {
-    ERC777._transferWithData(partition, operator, from, to, value, data, operatorData, preventLocking);
+    ERC777._send(partition, operator, from, to, value, data, operatorData, preventLocking);
 
     emit Transfer(from, to, value);
   }
@@ -91,13 +91,13 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
    * @dev Perform the token redemption.
    * @param partition Name of the partition (bytes32 to be left empty for ERC777 transfer).
    * @param operator The address performing the redemption.
-   * @param from Token holder whose tokens will be redeemed.
-   * @param value Number of tokens to redeem.
+   * @param from Token holder whose tokens will be burned.
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption.
    * @param operatorData Information attached to the redemption by the operator (if any).
    */
-  function _redeem(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData) internal {
-    ERC777._redeem(partition, operator, from, value, data, operatorData);
+  function _burn(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData) internal {
+    ERC777._burn(partition, operator, from, value, data, operatorData);
 
     emit Transfer(from, address(0), value);  //  ERC20 backwards compatibility
   }
@@ -112,8 +112,8 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
    * @param data Information attached to the issuance.
    * @param operatorData Information attached to the issued by the operator (if any).
    */
-  function _issue(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal {
-    ERC777._issue(partition, operator, to, value, data, operatorData);
+  function _mint(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal {
+    ERC777._mint(partition, operator, to, value, data, operatorData);
 
     emit Transfer(address(0), to, value); // ERC20 backwards compatibility
   }
@@ -164,7 +164,7 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
    * @return A boolean that indicates if the operation was successful.
    */
   function transfer(address to, uint256 value) external isWhitelisted(to) returns (bool) {
-    _transferWithData("", msg.sender, msg.sender, to, value, "", "", false);
+    _send("", msg.sender, msg.sender, to, value, "", "", false);
     return true;
   }
 
@@ -187,7 +187,7 @@ contract ERC777ERC20 is IERC20, ERC777Issuable {
       _allowed[_from][msg.sender] = 0;
     }
 
-    _transferWithData("", msg.sender, _from, to, value, "", "", false);
+    _send("", msg.sender, _from, to, value, "", "", false);
     return true;
   }
 

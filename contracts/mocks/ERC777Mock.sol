@@ -1,8 +1,8 @@
 pragma solidity ^0.5.0;
-import "../token/ERC777/ERC777Issuable.sol";
+import "../token/ERC777/ERC777Mintable.sol";
 
 
-contract ERC777Mock is ERC777Issuable {
+contract ERC777Mock is ERC777Mintable {
 
   constructor(
     string memory name,
@@ -32,8 +32,8 @@ contract ERC777Mock is ERC777Issuable {
     return _isRegularAddress(adr);
   }
 
-  function redeemFromMock(address from, uint256 value, bytes calldata data, bytes calldata operatorData) external {
-    _redeem("", msg.sender, from, value, data, operatorData);
+  function operatorBurnMock(address from, uint256 value, bytes calldata data, bytes calldata operatorData) external {
+    _burn("", msg.sender, from, value, data, operatorData);
   }
 
 }

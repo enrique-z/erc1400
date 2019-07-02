@@ -287,7 +287,7 @@ contract ERC1400 is IERC1400, ERC1410, MinterRole {
   )
     internal
   {
-    _issue(toPartition, operator, to, value, data, operatorData);
+    _mint(toPartition, operator, to, value, data, operatorData);
     _addTokenToPartition(to, toPartition, value);
 
     emit IssuedByPartition(toPartition, operator, to, value, data, operatorData);
@@ -316,7 +316,7 @@ contract ERC1400 is IERC1400, ERC1410, MinterRole {
     require(_balanceOfByPartition[from][fromPartition] >= value, "A4: Transfer Blocked - Sender balance insufficient");
 
     _removeTokenFromPartition(from, fromPartition, value);
-    _redeem(fromPartition, operator, from, value, data, operatorData);
+    _burn(fromPartition, operator, from, value, data, operatorData);
 
     emit RedeemedByPartition(fromPartition, operator, from, value, data, operatorData);
   }
@@ -396,10 +396,10 @@ contract ERC1400 is IERC1400, ERC1410, MinterRole {
   /**
    * [NOT MANDATORY FOR ERC1400 STANDARD][OVERRIDES ERC1410 METHOD]
    * @dev Redeem the value of tokens from the address 'msg.sender'.
-   * @param value Number of tokens to redeem.
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption, by the token holder. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function redeem(uint256 value, bytes calldata data)
+  function burn(uint256 value, bytes calldata data)
     external
     isValidCertificate(data)
   {
@@ -409,12 +409,12 @@ contract ERC1400 is IERC1400, ERC1410, MinterRole {
   /**
    * [NOT MANDATORY FOR ERC1400 STANDARD][OVERRIDES ERC1410 METHOD]
    * @dev Redeem the value of tokens on behalf of the address 'from'.
-   * @param from Token holder whose tokens will be redeemed (or 'address(0)' to set from to 'msg.sender').
-   * @param value Number of tokens to redeem.
+   * @param from Token holder whose tokens will be burned (or 'address(0)' to set from to 'msg.sender').
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption.
    * @param operatorData Information attached to the redemption, by the operator. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function redeemFrom(address from, uint256 value, bytes calldata data, bytes calldata operatorData)
+  function operatorBurn(address from, uint256 value, bytes calldata data, bytes calldata operatorData)
     external
     isValidCertificate(operatorData)
   {

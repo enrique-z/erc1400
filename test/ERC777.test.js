@@ -69,7 +69,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
 
     describe('total supply', function () {
       it('returns the total amount of tokens', async function () {
-        await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+        await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
         const totalSupply = await this.token.totalSupply();
 
         assert.equal(totalSupply, initialSupply);
@@ -87,7 +87,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
 
       describe('when the requested account has some tokens', function () {
         it('returns the total amount of tokens', async function () {
-          await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+          await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
           const balance = await this.token.balanceOf(tokenHolder);
 
           assert.equal(balance, initialSupply);
@@ -103,9 +103,9 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
       });
     });
 
-    describe('controllers', function () {
-      it('returns the list of controllers', async function () {
-        const controllers = await this.token.controllers();
+    describe('defaultOperators', function () {
+      it('returns the list of defaultOperators', async function () {
+        const controllers = await this.token.defaultOperators();
 
         assert.equal(controllers.length, 1);
         assert.equal(controllers[0], controller);
@@ -171,7 +171,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
     describe('setControllers', function () {
       describe('when the caller is the contract owner', function () {
         it('sets the operators as controllers', async function () {
-          const controllers1 = await this.token.controllers();
+          const controllers1 = await this.token.defaultOperators();
           assert.equal(controllers1.length, 1);
           assert.equal(controllers1[0], controller);
           assert.isTrue(!(await this.token.isOperatorFor(controller, unknown)));
@@ -182,7 +182,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
           assert.isTrue(!(await this.token.isOperatorFor(controller_alternative1, unknown)));
           assert.isTrue(!(await this.token.isOperatorFor(controller_alternative2, unknown)));
           await this.token.setControllers([controller_alternative1, controller_alternative2], { from: owner });
-          const controllers2 = await this.token.controllers();
+          const controllers2 = await this.token.defaultOperators();
           assert.equal(controllers2.length, 2);
           assert.equal(controllers2[0], controller_alternative1);
           assert.equal(controllers2[1], controller_alternative2);
@@ -202,14 +202,14 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
       });
     });
 
-    // ISSUE
+    // MINT
 
-    describe('issue', function () {
+    describe('mint', function () {
       describe('when the caller is a issuer', function () {
         describe('when the amount is a multiple of the granularity', function () {
           describe('when the recipient is not the zero address', function () {
             it('issues the requested amount', async function () {
-              await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+              await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
 
               const totalSupply = await this.token.totalSupply();
               const balance = await this.token.balanceOf(tokenHolder);
@@ -218,14 +218,14 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               assert.equal(balance, initialSupply);
             });
             it('emits a sent event', async function () {
-              const { logs } = await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+              const { logs } = await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
 
               assert.equal(logs.length, 2);
 
               assert.equal(logs[0].event, 'Checked');
               assert.equal(logs[0].args.sender, owner);
 
-              assert.equal(logs[1].event, 'Issued');
+              assert.equal(logs[1].event, 'Minted');
               assert.equal(logs[1].args.operator, owner);
               assert.equal(logs[1].args.to, tokenHolder);
               assert.equal(logs[1].args.value, initialSupply);
@@ -235,30 +235,30 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
           });
           describe('when the recipient is the zero address', function () {
             it('reverts', async function () {
-              await shouldFail.reverting(this.token.issue(ZERO_ADDRESS, initialSupply, VALID_CERTIFICATE, { from: owner }));
+              await shouldFail.reverting(this.token.mint(ZERO_ADDRESS, initialSupply, VALID_CERTIFICATE, { from: owner }));
             });
           });
         });
         describe('when the amount is not a multiple of the granularity', function () {
           it('reverts', async function () {
             this.token = await ERC777.new('ERC777Token', 'DAU', 2, [], CERTIFICATE_SIGNER);
-            await shouldFail.reverting(this.token.issue(tokenHolder, 3, VALID_CERTIFICATE, { from: owner }));
+            await shouldFail.reverting(this.token.mint(tokenHolder, 3, VALID_CERTIFICATE, { from: owner }));
           });
         });
       });
       describe('when the caller is not a issuer', function () {
         it('reverts', async function () {
-          await shouldFail.reverting(this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: unknown }));
+          await shouldFail.reverting(this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: unknown }));
         });
       });
     });
 
-    // TRANSFERWITHDATA
+    // SEND
 
-    describe('transferWithData', function () {
+    describe('send', function () {
       const to = recipient;
       beforeEach(async function () {
-        await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+        await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
       });
       describe('when the amount is a multiple of the granularity', function () {
         describe('when the recipient is not the zero address', function () {
@@ -266,7 +266,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
             const amount = initialSupply;
             describe('when the recipient is a regular address', function () {
               it('transfers the requested amount', async function () {
-                await this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
+                await this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
                 const senderBalance = await this.token.balanceOf(tokenHolder);
                 assert.equal(senderBalance, initialSupply - amount);
 
@@ -275,14 +275,14 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               });
 
               it('emits a sent event', async function () {
-                const { logs } = await this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
+                const { logs } = await this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
 
                 assert.equal(logs.length, 2);
 
                 assert.equal(logs[0].event, 'Checked');
                 assert.equal(logs[0].args.sender, tokenHolder);
 
-                assert.equal(logs[1].event, 'TransferWithData');
+                assert.equal(logs[1].event, 'Sent');
                 assert.equal(logs[1].args.operator, tokenHolder);
                 assert.equal(logs[1].args.from, tokenHolder);
                 assert.equal(logs[1].args.to, to);
@@ -293,7 +293,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
             });
             describe('when the recipient is not a regular address', function () {
               it('reverts', async function () {
-                await shouldFail.reverting(this.token.transferWithData(this.token.address, amount, VALID_CERTIFICATE, { from: tokenHolder }));
+                await shouldFail.reverting(this.token.send(this.token.address, amount, VALID_CERTIFICATE, { from: tokenHolder }));
               });
             });
           });
@@ -301,7 +301,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
             const amount = initialSupply + 1;
 
             it('reverts', async function () {
-              await shouldFail.reverting(this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder }));
+              await shouldFail.reverting(this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder }));
             });
           });
         });
@@ -311,25 +311,25 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
           const to = ZERO_ADDRESS;
 
           it('reverts', async function () {
-            await shouldFail.reverting(this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder }));
+            await shouldFail.reverting(this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder }));
           });
         });
       });
       describe('when the amount is not a multiple of the granularity', function () {
         it('reverts', async function () {
           this.token = await ERC777.new('ERC777Token', 'DAU', 2, [], CERTIFICATE_SIGNER);
-          await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
-          await shouldFail.reverting(this.token.transferWithData(to, 3, VALID_CERTIFICATE, { from: tokenHolder }));
+          await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+          await shouldFail.reverting(this.token.send(to, 3, VALID_CERTIFICATE, { from: tokenHolder }));
         });
       });
     });
 
-    // TRANSFERFROMWITHDATA
+    // OPERATORSEND
 
-    describe('transferFromWithData', function () {
+    describe('operatorSend', function () {
       const to = recipient;
       beforeEach(async function () {
-        await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+        await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
       });
       describe('when the operator is approved', function () {
         beforeEach(async function () {
@@ -341,9 +341,9 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               const amount = initialSupply;
 
               it('transfers the requested amount from operator address', async function () {
-                await this.token.transferWithData(operator, amount, VALID_CERTIFICATE, { from: tokenHolder });
+                await this.token.send(operator, amount, VALID_CERTIFICATE, { from: tokenHolder });
 
-                await this.token.transferFromWithData(ZERO_ADDRESS, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+                await this.token.operatorSend(ZERO_ADDRESS, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
                 const senderBalance = await this.token.balanceOf(operator);
                 assert.equal(senderBalance, initialSupply - amount);
 
@@ -356,7 +356,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               const amount = initialSupply;
 
               it('transfers the requested amount', async function () {
-                await this.token.transferFromWithData(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+                await this.token.operatorSend(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
                 const senderBalance = await this.token.balanceOf(tokenHolder);
                 assert.equal(senderBalance, initialSupply - amount);
 
@@ -365,14 +365,14 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               });
 
               it('emits a sent event [with ERC20 retrocompatibility]', async function () {
-                const { logs } = await this.token.transferFromWithData(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+                const { logs } = await this.token.operatorSend(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
                 assert.equal(logs.length, 2);
 
                 assert.equal(logs[0].event, 'Checked');
                 assert.equal(logs[0].args.sender, operator);
 
-                assert.equal(logs[1].event, 'TransferWithData');
+                assert.equal(logs[1].event, 'Sent');
                 assert.equal(logs[1].args.operator, operator);
                 assert.equal(logs[1].args.from, tokenHolder);
                 assert.equal(logs[1].args.to, to);
@@ -385,7 +385,7 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
               const amount = initialSupply + 1;
 
               it('reverts', async function () {
-                await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+                await shouldFail.reverting(this.token.operatorSend(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
               });
             });
           });
@@ -395,52 +395,52 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
             const to = ZERO_ADDRESS;
 
             it('reverts', async function () {
-              await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+              await shouldFail.reverting(this.token.operatorSend(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
             });
           });
         });
         describe('when the amount is not a multiple of the granularity', function () {
           it('reverts', async function () {
             this.token = await ERC777.new('ERC777Token', 'DAU', 2, [], CERTIFICATE_SIGNER);
-            await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
-            await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, to, 3, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+            await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+            await shouldFail.reverting(this.token.operatorSend(tokenHolder, to, 3, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
           });
         });
       });
       describe('when the operator is not approved', function () {
         it('reverts', async function () {
           const amount = initialSupply;
-          await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+          await shouldFail.reverting(this.token.operatorSend(tokenHolder, to, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
         });
       });
     });
 
-    // REDEEM
+    // BURN
 
-    describe('redeem', function () {
+    describe('burn', function () {
       beforeEach(async function () {
-        await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+        await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
       });
 
       describe('when the amount is a multiple of the granularity', function () {
-        describe('when the redeemer has enough balance', function () {
+        describe('when the burner has enough balance', function () {
           const amount = initialSupply;
 
-          it('redeems the requested amount', async function () {
-            await this.token.redeem(amount, VALID_CERTIFICATE, { from: tokenHolder });
+          it('burns the requested amount', async function () {
+            await this.token.burn(amount, VALID_CERTIFICATE, { from: tokenHolder });
             const senderBalance = await this.token.balanceOf(tokenHolder);
             assert.equal(senderBalance, initialSupply - amount);
           });
 
-          it('emits a redeemed event [with ERC20 retrocompatibility]', async function () {
-            const { logs } = await this.token.redeem(amount, VALID_CERTIFICATE, { from: tokenHolder });
+          it('emits a burned event [with ERC20 retrocompatibility]', async function () {
+            const { logs } = await this.token.burn(amount, VALID_CERTIFICATE, { from: tokenHolder });
 
             assert.equal(logs.length, 2);
 
             assert.equal(logs[0].event, 'Checked');
             assert.equal(logs[0].args.sender, tokenHolder);
 
-            assert.equal(logs[1].event, 'Redeemed');
+            assert.equal(logs[1].event, 'Burned');
             assert.equal(logs[1].args.operator, tokenHolder);
             assert.equal(logs[1].args.from, tokenHolder);
             assert.equal(logs[1].args.value, amount);
@@ -448,73 +448,73 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
             assert.equal(logs[1].args.operatorData, null);
           });
         });
-        describe('when the redeemer does not have enough balance', function () {
+        describe('when the burner does not have enough balance', function () {
           const amount = initialSupply + 1;
 
           it('reverts', async function () {
-            await shouldFail.reverting(this.token.redeem(amount, VALID_CERTIFICATE, { from: tokenHolder }));
+            await shouldFail.reverting(this.token.burn(amount, VALID_CERTIFICATE, { from: tokenHolder }));
           });
         });
       });
       describe('when the amount is not a multiple of the granularity', function () {
         it('reverts', async function () {
           this.token = await ERC777.new('ERC777Token', 'DAU', 2, [], CERTIFICATE_SIGNER);
-          await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
-          await shouldFail.reverting(this.token.redeem(3, VALID_CERTIFICATE, { from: tokenHolder }));
+          await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+          await shouldFail.reverting(this.token.burn(3, VALID_CERTIFICATE, { from: tokenHolder }));
         });
       });
     });
 
-    // REDEEMFROM
+    // OPERATORBURN
 
-    describe('redeemFrom', function () {
+    describe('operatorBurn', function () {
       beforeEach(async function () {
-        await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+        await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
       });
 
       beforeEach(async function () {
         await this.token.authorizeOperator(operator, { from: tokenHolder });
       });
       describe('when the amount is a multiple of the granularity', function () {
-        describe('when the redeemer is not the zero address', function () {
-          describe('when the redeemer does not have enough balance', function () {
+        describe('when the burner is not the zero address', function () {
+          describe('when the burner does not have enough balance', function () {
             const amount = initialSupply + 1;
 
             it('reverts', async function () {
-              await shouldFail.reverting(this.token.redeemFrom(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+              await shouldFail.reverting(this.token.operatorBurn(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
             });
           });
 
-          describe('when the redeemer has enough balance + the redeemer is not specified', function () {
+          describe('when the burner has enough balance + the burner is not specified', function () {
             const amount = initialSupply;
 
-            it('redeems the requested amount from operator address', async function () {
-              await this.token.transferWithData(operator, amount, VALID_CERTIFICATE, { from: tokenHolder });
+            it('burns the requested amount from operator address', async function () {
+              await this.token.send(operator, amount, VALID_CERTIFICATE, { from: tokenHolder });
 
-              await this.token.redeemFrom(ZERO_ADDRESS, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+              await this.token.operatorBurn(ZERO_ADDRESS, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
               const senderBalance = await this.token.balanceOf(operator);
               assert.equal(senderBalance, initialSupply - amount);
             });
           });
 
-          describe('when the redeemer has enough balance', function () {
+          describe('when the burner has enough balance', function () {
             const amount = initialSupply;
 
-            it('redeems the requested amount', async function () {
-              await this.token.redeemFrom(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            it('burns the requested amount', async function () {
+              await this.token.operatorBurn(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
               const senderBalance = await this.token.balanceOf(tokenHolder);
               assert.equal(senderBalance, initialSupply - amount);
             });
 
-            it('emits a redeemed event [with ERC20 retrocompatibility]', async function () {
-              const { logs } = await this.token.redeemFrom(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            it('emits a burned event [with ERC20 retrocompatibility]', async function () {
+              const { logs } = await this.token.operatorBurn(tokenHolder, amount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
               assert.equal(logs.length, 2);
 
               assert.equal(logs[0].event, 'Checked');
               assert.equal(logs[0].args.sender, operator);
 
-              assert.equal(logs[1].event, 'Redeemed');
+              assert.equal(logs[1].event, 'Burned');
               assert.equal(logs[1].args.operator, operator);
               assert.equal(logs[1].args.from, tokenHolder);
               assert.equal(logs[1].args.value, amount);
@@ -524,18 +524,18 @@ contract('ERC777 without hooks', function ([owner, operator, controller, control
           });
         });
 
-        describe('when the redeemer is the zero address', function () {
+        describe('when the burner is the zero address', function () {
           it('reverts', async function () {
             const amount = initialSupply;
-            await shouldFail.reverting(this.token.redeemFromMock(ZERO_ADDRESS, amount, ZERO_BYTE, ZERO_BYTE, { from: operator }));
+            await shouldFail.reverting(this.token.operatorBurnMock(ZERO_ADDRESS, amount, ZERO_BYTE, ZERO_BYTE, { from: operator }));
           });
         });
       });
       describe('when the amount is not a multiple of the granularity', function () {
         it('reverts', async function () {
           this.token = await ERC777.new('ERC777Token', 'DAU', 2, [], CERTIFICATE_SIGNER);
-          await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
-          await shouldFail.reverting(this.token.redeemFrom(tokenHolder, 3, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+          await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+          await shouldFail.reverting(this.token.operatorBurn(tokenHolder, 3, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
         });
       });
     });
@@ -561,11 +561,11 @@ contract('ERC777 with hooks', function ([owner, operator, controller, tokenHolde
       await this.registry.setManager(recipient, this.recipientContract.address, { from: recipient });
       await this.recipientContract.setERC1820Implementer({ from: recipient });
 
-      await this.token.issue(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
+      await this.token.mint(tokenHolder, initialSupply, VALID_CERTIFICATE, { from: owner });
     });
     describe('when the transfer is successfull', function () {
       it('transfers the requested amount', async function () {
-        await this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
+        await this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
         const senderBalance = await this.token.balanceOf(tokenHolder);
         assert.equal(senderBalance, initialSupply - amount);
 
@@ -576,11 +576,11 @@ contract('ERC777 with hooks', function ([owner, operator, controller, tokenHolde
     describe('when the transfer fails', function () {
       it('sender hook reverts', async function () {
         // Default sender hook failure data for the mock only: 0x1100000000000000000000000000000000000000000000000000000000000000
-        await shouldFail.reverting(this.token.transferWithData(to, amount, INVALID_CERTIFICATE_SENDER, { from: tokenHolder }));
+        await shouldFail.reverting(this.token.send(to, amount, INVALID_CERTIFICATE_SENDER, { from: tokenHolder }));
       });
       it('recipient hook reverts', async function () {
         // Default recipient hook failure data for the mock only: 0x2200000000000000000000000000000000000000000000000000000000000000
-        await shouldFail.reverting(this.token.transferWithData(to, amount, INVALID_CERTIFICATE_RECIPIENT, { from: tokenHolder }));
+        await shouldFail.reverting(this.token.send(to, amount, INVALID_CERTIFICATE_RECIPIENT, { from: tokenHolder }));
       });
     });
   });

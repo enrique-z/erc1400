@@ -70,7 +70,7 @@ contract ERC1400ERC20 is IERC20, ERC1400 {
    * ERC777 native transfer functions MUST set this parameter to 'true', and backwards compatible ERC20 transfer
    * functions SHOULD set this parameter to 'false'.
    */
-  function _transferWithData(
+  function _send(
     bytes32 partition,
     address operator,
     address from,
@@ -82,7 +82,7 @@ contract ERC1400ERC20 is IERC20, ERC1400 {
   )
     internal
   {
-    ERC777._transferWithData(partition, operator, from, to, value, data, operatorData, preventLocking);
+    ERC777._send(partition, operator, from, to, value, data, operatorData, preventLocking);
 
     emit Transfer(from, to, value);
   }
@@ -92,13 +92,13 @@ contract ERC1400ERC20 is IERC20, ERC1400 {
    * @dev Perform the token redemption.
    * @param partition Name of the partition (bytes32 to be left empty for ERC777 transfer).
    * @param operator The address performing the redemption.
-   * @param from Token holder whose tokens will be redeemed.
-   * @param value Number of tokens to redeem.
+   * @param from Token holder whose tokens will be burned.
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption.
    * @param operatorData Information attached to the redemption by the operator (if any).
    */
-  function _redeem(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData) internal {
-    ERC777._redeem(partition, operator, from, value, data, operatorData);
+  function _burn(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData) internal {
+    ERC777._burn(partition, operator, from, value, data, operatorData);
 
     emit Transfer(from, address(0), value);  //  ERC20 backwards compatibility
   }
@@ -113,8 +113,8 @@ contract ERC1400ERC20 is IERC20, ERC1400 {
    * @param data Information attached to the issuance.
    * @param operatorData Information attached to the issuance by the operator (if any).
    */
-  function _issue(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal {
-    ERC777._issue(partition, operator, to, value, data, operatorData);
+  function _mint(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal {
+    ERC777._mint(partition, operator, to, value, data, operatorData);
 
     emit Transfer(address(0), to, value); // ERC20 backwards compatibility
   }

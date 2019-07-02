@@ -75,7 +75,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
 
     _setControllers(controllers);
 
-    setInterfaceImplementation("ERC777LikeToken", address(this));
+    setInterfaceImplementation("ERC777Token", address(this));
   }
 
   /********************** ERC777 EXTERNAL FUNCTIONS ***************************/
@@ -131,14 +131,14 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
    * @dev Get the list of controllers as defined by the token contract.
    * @return List of addresses of all the controllers.
    */
-  function controllers() external view returns (address[] memory) {
+  function defaultOperators() external view returns (address[] memory) { // Could also be called 'controllers'
     return _controllers;
   }
 
   /**
    * [ERC777 INTERFACE (7/13)]
    * @dev Set a third party operator address as an operator of 'msg.sender' to transfer
-   * and redeem tokens on its behalf.
+   * and burn tokens on its behalf.
    * @param operator Address to set as an operator for 'msg.sender'.
    */
   function authorizeOperator(address operator) external {
@@ -149,7 +149,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
   /**
    * [ERC777 INTERFACE (8/13)]
    * @dev Remove the right of the operator address to be an operator for 'msg.sender'
-   * and to transfer and redeem tokens on its behalf.
+   * and to transfer and burn tokens on its behalf.
    * @param operator Address to rescind as an operator for 'msg.sender'.
    */
   function revokeOperator(address operator) external {
@@ -175,11 +175,11 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
    * @param value Number of tokens to transfer.
    * @param data Information attached to the transfer, by the token holder. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function transferWithData(address to, uint256 value, bytes calldata data)
+  function send(address to, uint256 value, bytes calldata data)
     external
     isValidCertificate(data)
   {
-    _transferWithData("", msg.sender, msg.sender, to, value, data, "", true);
+    _send("", msg.sender, msg.sender, to, value, data, "", true);
   }
 
   /**
@@ -191,7 +191,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
    * @param data Information attached to the transfer, and intended for the token holder ('from').
    * @param operatorData Information attached to the transfer by the operator. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function transferFromWithData(address from, address to, uint256 value, bytes calldata data, bytes calldata operatorData)
+  function operatorSend(address from, address to, uint256 value, bytes calldata data, bytes calldata operatorData)
     external
     isValidCertificate(operatorData)
   {
@@ -199,31 +199,31 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
 
     require(_isOperatorFor(msg.sender, _from), "A7: Transfer Blocked - Identity restriction");
 
-    _transferWithData("", msg.sender, _from, to, value, data, operatorData, true);
+    _send("", msg.sender, _from, to, value, data, operatorData, true);
   }
 
   /**
    * [ERC777 INTERFACE (12/13)]
-   * @dev Redeem the amount of tokens from the address 'msg.sender'.
-   * @param value Number of tokens to redeem.
+   * @dev Burn the amount of tokens from the address 'msg.sender'.
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption, by the token holder. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function redeem(uint256 value, bytes calldata data)
+  function burn(uint256 value, bytes calldata data)
     external
     isValidCertificate(data)
   {
-    _redeem("", msg.sender, msg.sender, value, data, "");
+    _burn("", msg.sender, msg.sender, value, data, "");
   }
 
   /**
    * [ERC777 INTERFACE (13/13)]
-   * @dev Redeem the amount of tokens on behalf of the address from.
-   * @param from Token holder whose tokens will be redeemed (or address(0) to set from to msg.sender).
-   * @param value Number of tokens to redeem.
+   * @dev Burn the amount of tokens on behalf of the address from.
+   * @param from Token holder whose tokens will be burned (or address(0) to set from to msg.sender).
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption.
    * @param operatorData Information attached to the redemption, by the operator. [CONTAINS THE CONDITIONAL OWNERSHIP CERTIFICATE]
    */
-  function redeemFrom(address from, uint256 value, bytes calldata data, bytes calldata operatorData)
+  function operatorBurn(address from, uint256 value, bytes calldata data, bytes calldata operatorData)
     external
     isValidCertificate(operatorData)
   {
@@ -231,7 +231,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
 
     require(_isOperatorFor(msg.sender, _from), "A7: Transfer Blocked - Identity restriction");
 
-    _redeem("", msg.sender, _from, value, data, operatorData);
+    _burn("", msg.sender, _from, value, data, operatorData);
   }
 
   /********************** ERC777 INTERNAL FUNCTIONS ***************************/
@@ -288,7 +288,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
     * ERC777 native transfer functions MUST set this parameter to 'true', and backwards compatible ERC20 transfer
     * functions SHOULD set this parameter to 'false'.
     */
-  function _transferWithData(
+  function _send(
     bytes32 partition,
     address operator,
     address from,
@@ -312,7 +312,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
 
     _callRecipient(partition, operator, from, to, value, data, operatorData, preventLocking);
 
-    emit TransferWithData(operator, from, to, value, data, operatorData);
+    emit Sent(operator, from, to, value, data, operatorData);
   }
 
   /**
@@ -320,12 +320,12 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
    * @dev Perform the token redemption.
    * @param partition Name of the partition (bytes32 to be left empty for ERC777 transfer).
    * @param operator The address performing the redemption.
-   * @param from Token holder whose tokens will be redeemed.
-   * @param value Number of tokens to redeem.
+   * @param from Token holder whose tokens will be burned.
+   * @param value Number of tokens to burn.
    * @param data Information attached to the redemption.
    * @param operatorData Information attached to the redemption, by the operator (if any).
    */
-  function _redeem(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData)
+  function _burn(bytes32 partition, address operator, address from, uint256 value, bytes memory data, bytes memory operatorData)
     internal
     nonReentrant
   {
@@ -338,7 +338,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
     _balances[from] = _balances[from].sub(value);
     _totalSupply = _totalSupply.sub(value);
 
-    emit Redeemed(operator, from, value, data, operatorData);
+    emit Burned(operator, from, value, data, operatorData);
   }
 
   /**
@@ -420,7 +420,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
    * @param data Information attached to the issuance, and intended for the recipient (to).
    * @param operatorData Information attached to the issuance by the operator (if any).
    */
-  function _issue(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal nonReentrant {
+  function _mint(bytes32 partition, address operator, address to, uint256 value, bytes memory data, bytes memory operatorData) internal nonReentrant {
     require(_isMultiple(value), "A9: Transfer Blocked - Token granularity");
     require(to != address(0), "A6: Transfer Blocked - Receiver not eligible");
 
@@ -429,7 +429,7 @@ contract ERC777 is IERC777, Ownable, ERC1820Client, CertificateController, Reent
 
     _callRecipient(partition, operator, address(0), to, value, data, operatorData, true);
 
-    emit Issued(operator, to, value, data, operatorData);
+    emit Minted(operator, to, value, data, operatorData);
   }
 
   /********************** ERC777 OPTIONAL FUNCTIONS ***************************/

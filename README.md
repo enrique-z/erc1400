@@ -68,7 +68,7 @@ Those controls can evolve quickly and require flexibility, which makes it diffic
 
 The use of an additional 'data' parameter in the transfer functions can enable more evolved / granular controls:
 ```
-function transferWithData(address recipient, uint256 value, bytes data)
+function send(address recipient, uint256 value, bytes data)
 ```
 CoFi OS fosters to use this additional 'data' field (available in ERC777 and ERC1400 standards) to inject a certificate generated off-chain by the issuer.
 A token transfer shall be conditioned to the validity of the certificate, thus offering the issuer with strong control capabilities over its financial assets.
@@ -97,7 +97,7 @@ PS: Since the ERC1400 standard is agnostic about the way to control certificate,
 
 The [ERC777](contracts/token/ERC777/ERC777.sol) is an advanced token standard adapted for regulated asset transfers, since it allows to inject data (i.e. our certificate) in the transfer transactions:
 ```
-function transferWithData(address recipient, uint256 value, bytes data)
+function send(address recipient, uint256 value, bytes data)
 ```
 
 The official proposal can be found at: [eips.ethereum.org/EIPS/eip-777](https://eips.ethereum.org/EIPS/eip-777).
@@ -106,10 +106,6 @@ We've performed a few updates compared to the official proposal, mainly to bette
  - Introduction of the notion of 'controllers' (replacing defaultOperators) for better consistency with ERC1400 'controllers'.
  - Introduction of '_isControllable' property (set to 'false' by default for the ERC777, but set to 'true' for the ERC1400).
  - Update of IERC777TokensRecipient and IERC777TokensSender interfaces, by adding 'partition' parameters, and renaming into IERC1400TokensRecipient and IERC1400TokensSender in order to make the hooks ERC1400-compliant.
- - Renaming of 'send' function (now 'transferWithData') and 'Sent' event (now 'TransferWithData') for better consistency with ERC1400 names + to avoid potential issues with blockchain tools (e.g. Truffle, etc.) considering 'send' as a reserved word.
- - Renaming of 'mint' function (now 'issue') and 'Minted' event (now 'Issued') for better consistency with ERC1400 names.
- - Renaming of 'burn' function (now 'redeem') and 'Burned' event (now 'Redeemed') for better consistency with ERC1400 names.
- - Renaming of 'operatorBurn' function (now 'redeemFrom') for better consistency with ERC1400 names.
 
 ERC777 can be made compatible with ERC20 (see [ERC777ERC20.sol](contracts/token/ERC20/ERC777ERC20.sol)).
 This backwards compatibility property offers interoperability, as ERC20 tokens are compatible with most existing exchange platforms.
@@ -129,13 +125,13 @@ interface IERC777 {
   function revokeOperator(address operator) external;
   function isOperatorFor(address operator, address tokenHolder) external view returns (bool);
 
-  function transferWithData(address to, uint256 value, bytes data) external;
-  function transferFromWithData(address from, address to, uint256 value, bytes data, bytes operatorData) external;
+  function send(address to, uint256 value, bytes data) external;
+  function operatorSend(address from, address to, uint256 value, bytes data, bytes operatorData) external;
 
-  function redeem(uint256 value, bytes data) external;
-  function redeemFrom(address from, uint256 value, bytes data, bytes operatorData) external;
+  function burn(uint256 value, bytes data) external;
+  function operatorBurn(address from, uint256 value, bytes data, bytes operatorData) external;
 
-  event TransferWithData(
+  event Sent(
     address indexed operator,
     address indexed from,
     address indexed to,
@@ -143,8 +139,8 @@ interface IERC777 {
     bytes data,
     bytes operatorData
   );
-  event Issued(address indexed operator, address indexed to, uint256 value, bytes data, bytes operatorData);
-  event Redeemed(address indexed operator, address indexed from, uint256 value, bytes data, bytes operatorData);
+  event Minted(address indexed operator, address indexed to, uint256 value, bytes data, bytes operatorData);
+  event Burned(address indexed operator, address indexed from, uint256 value, bytes data, bytes operatorData);
   event AuthorizedOperator(address indexed operator, address indexed tokenHolder);
   event RevokedOperator(address indexed operator, address indexed tokenHolder);
 

@@ -73,7 +73,7 @@ const assertTransferEvent = (
     i = 1;
   }
 
-  assert.equal(_logs[i].event, 'TransferWithData');
+  assert.equal(_logs[i].event, 'Sent');
   assert.equal(_logs[i].args.operator, _operator);
   assert.equal(_logs[i].args.from, _from);
   assert.equal(_logs[i].args.to, _to);
@@ -107,7 +107,7 @@ const assertBurnEvent = (
     i = 1;
   }
 
-  assert.equal(_logs[i].event, 'Redeemed');
+  assert.equal(_logs[i].event, 'Burned');
   assert.equal(_logs[i].args.operator, _operator);
   assert.equal(_logs[i].args.from, _from);
   assert.equal(_logs[i].args.value, _amount);
@@ -375,14 +375,14 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
     });
     describe('when the caller is the contract owner', function () {
       it('sets the operators as controllers', async function () {
-        const controllers1 = await this.token.controllers();
+        const controllers1 = await this.token.defaultOperators();
         assert.equal(controllers1.length, 1);
         assert.equal(controllers1[0], controller);
         assert.isTrue(await this.token.isOperatorFor(controller, unknown));
         assert.isTrue(!(await this.token.isOperatorFor(controller_alternative1, unknown)));
         assert.isTrue(!(await this.token.isOperatorFor(controller_alternative2, unknown)));
         await this.token.setControllers([controller_alternative1, controller_alternative2], { from: owner });
-        const controllers2 = await this.token.controllers();
+        const controllers2 = await this.token.defaultOperators();
         assert.equal(controllers2.length, 2);
         assert.equal(controllers2[0], controller_alternative1);
         assert.equal(controllers2[1], controller_alternative2);
@@ -539,14 +539,14 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
 
   // CONTROLLERS
 
-  describe('controllers', function () {
+  describe('defaultOperators', function () {
     beforeEach(async function () {
       this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions);
     });
     describe('when the token is controllable', function () {
-      it('returns the list of controllers', async function () {
+      it('returns the list of defaultOperators', async function () {
         assert.isTrue(await this.token.isControllable());
-        const controllers = await this.token.controllers();
+        const controllers = await this.token.defaultOperators();
 
         assert.equal(controllers.length, 1);
         assert.equal(controllers[0], controller);
@@ -554,7 +554,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
     });
   });
 
-  // CONTROLLERS
+  // CONTROLLERSBYPARTITION
 
   describe('controllersByPartition', function () {
     beforeEach(async function () {
@@ -680,7 +680,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
           assert.equal(logs[0].event, 'Checked');
           assert.equal(logs[0].args.sender, owner);
 
-          assert.equal(logs[1].event, 'Issued');
+          assert.equal(logs[1].event, 'Minted');
           assert.equal(logs[1].args.operator, owner);
           assert.equal(logs[1].args.to, tokenHolder);
           assert.equal(logs[1].args.value, issuanceAmount);
@@ -942,7 +942,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
       });
     });
     describe('when the sender is a global operator', function () {
-      it('redeems the requested amount', async function () {
+      it('transfers the requested amount', async function () {
         await assertBalanceOf(this.token, tokenHolder, partition1, issuanceAmount);
         await assertBalanceOf(this.token, recipient, partition1, 0);
 
@@ -1026,9 +1026,9 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
     });
   });
 
-  // TRANSFERWITHDATA
+  // SEND
 
-  describe('transferWithData', function () {
+  describe('send', function () {
     describe('when tokenDefaultPartitions have been defined', function () {
       beforeEach(async function () {
         this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions);
@@ -1040,14 +1040,14 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.transferWithData(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
+            await this.token.send(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
             await assertBalances(this.token, recipient, partitions, [issuanceAmount, 0.5 * issuanceAmount, issuanceAmount]);
           });
           it('emits a sent event', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-            const { logs } = await this.token.transferWithData(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
+            const { logs } = await this.token.send(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
 
             assert.equal(logs.length, 1 + 2 * partitions.length);
 
@@ -1060,7 +1060,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
           it('transfers the requested amount', async function () {
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.transferWithData(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
+            await this.token.send(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0, 0.5 * issuanceAmount]);
             await assertBalances(this.token, recipient, partitions, [issuanceAmount, issuanceAmount, 0.5 * issuanceAmount]);
@@ -1070,7 +1070,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
       describe('when the sender does not have enough balance for those default partitions', function () {
         it('reverts', async function () {
           await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-          await shouldFail.reverting(this.token.transferWithData(recipient, 3.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
+          await shouldFail.reverting(this.token.send(recipient, 3.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
         });
       });
     });
@@ -1078,14 +1078,14 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
       it('reverts', async function () {
         this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, []);
         await issueOnMultiplePartitions(this.token, owner, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
-        await shouldFail.reverting(this.token.transferWithData(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
+        await shouldFail.reverting(this.token.send(recipient, 2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
       });
     });
   });
 
-  // TRANSFERFROMWITHDATA
+  // OPERATORSEND
 
-  describe('transferFromWithData', function () {
+  describe('operatorSend', function () {
     beforeEach(async function () {
       this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions);
       await issueOnMultiplePartitions(this.token, owner, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
@@ -1100,7 +1100,7 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.transferFromWithData(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            await this.token.operatorSend(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
             await assertBalances(this.token, recipient, partitions, [issuanceAmount, 0.5 * issuanceAmount, issuanceAmount]);
@@ -1109,14 +1109,14 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.transferFromWithData(ZERO_ADDRESS, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: tokenHolder });
+            await this.token.operatorSend(ZERO_ADDRESS, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: tokenHolder });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
             await assertBalances(this.token, recipient, partitions, [issuanceAmount, 0.5 * issuanceAmount, issuanceAmount]);
           });
           it('emits a sent event', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-            const { logs } = await this.token.transferFromWithData(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            const { logs } = await this.token.operatorSend(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
             assert.equal(logs.length, 1 + 2 * partitions.length);
 
@@ -1128,28 +1128,28 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
         describe('when the sender does not have enough balance for those default partitions', function () {
           it('reverts', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-            await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, recipient, 3.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+            await shouldFail.reverting(this.token.operatorSend(tokenHolder, recipient, 3.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
           });
         });
       });
       describe('when defaultPartitions have not been defined', function () {
         it('reverts', async function () {
           await this.token.setTokenDefaultPartitions([], { from: owner });
-          await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+          await shouldFail.reverting(this.token.operatorSend(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
         });
       });
     });
     describe('when the operator is not approved', function () {
       it('reverts', async function () {
         await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-        await shouldFail.reverting(this.token.transferFromWithData(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+        await shouldFail.reverting(this.token.operatorSend(tokenHolder, recipient, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
       });
     });
   });
 
-  // REDEEM
+  // BURN
 
-  describe('redeem', function () {
+  describe('burn', function () {
     beforeEach(async function () {
       this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions);
       await issueOnMultiplePartitions(this.token, owner, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
@@ -1160,13 +1160,13 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
           await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
           await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-          await this.token.redeem(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
+          await this.token.burn(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
 
           await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
         });
         it('emits a redeemedByPartition events', async function () {
           await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-          const { logs } = await this.token.redeem(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
+          const { logs } = await this.token.burn(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder });
 
           assert.equal(logs.length, 1 + 2 * partitions.length);
 
@@ -1178,21 +1178,21 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
       describe('when the sender does not have enough balance for those default partitions', function () {
         it('reverts', async function () {
           await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-          await shouldFail.reverting(this.token.redeem(3.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
+          await shouldFail.reverting(this.token.burn(3.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
         });
       });
     });
     describe('when defaultPartitions have not been defined', function () {
       it('reverts', async function () {
         await this.token.setTokenDefaultPartitions([], { from: owner });
-        await shouldFail.reverting(this.token.redeem(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
+        await shouldFail.reverting(this.token.burn(2.5 * issuanceAmount, VALID_CERTIFICATE, { from: tokenHolder }));
       });
     });
   });
 
-  // REDEEMFROM
+  // OPERATORBURN
 
-  describe('redeemFrom', function () {
+  describe('operatorBurn', function () {
     beforeEach(async function () {
       this.token = await ERC1400.new('ERC1400Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions);
       await issueOnMultiplePartitions(this.token, owner, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
@@ -1203,25 +1203,25 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
       });
       describe('when defaultPartitions have been defined', function () {
         describe('when the sender has enough balance for those default partitions', function () {
-          it('redeems the requested amount (when sender is specified)', async function () {
+          it('burns the requested amount (when sender is specified)', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.redeemFrom(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            await this.token.operatorBurn(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
           });
-          it('redeems the requested amount (when sender is not specified)', async function () {
+          it('burns the requested amount (when sender is not specified)', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
             await assertBalances(this.token, tokenHolder, partitions, [issuanceAmount, issuanceAmount, issuanceAmount]);
 
-            await this.token.redeemFrom(ZERO_ADDRESS, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: tokenHolder });
+            await this.token.operatorBurn(ZERO_ADDRESS, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: tokenHolder });
 
             await assertBalances(this.token, tokenHolder, partitions, [0, 0.5 * issuanceAmount, 0]);
           });
           it('emits redeemedByPartition events', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-            const { logs } = await this.token.redeemFrom(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+            const { logs } = await this.token.operatorBurn(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
 
             assert.equal(logs.length, 1 + 2 * partitions.length);
 
@@ -1233,21 +1233,21 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
         describe('when the sender does not have enough balance for those default partitions', function () {
           it('reverts', async function () {
             await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-            await shouldFail.reverting(this.token.redeemFrom(tokenHolder, 3.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+            await shouldFail.reverting(this.token.operatorBurn(tokenHolder, 3.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
           });
         });
       });
       describe('when defaultPartitions have not been defined', function () {
         it('reverts', async function () {
           await this.token.setTokenDefaultPartitions([], { from: owner });
-          await shouldFail.reverting(this.token.redeemFrom(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+          await shouldFail.reverting(this.token.operatorBurn(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
         });
       });
     });
     describe('when the operator is not approved', function () {
       it('reverts', async function () {
         await this.token.setDefaultPartitions(reversedPartitions, { from: tokenHolder });
-        await shouldFail.reverting(this.token.redeemFrom(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
+        await shouldFail.reverting(this.token.operatorBurn(tokenHolder, 2.5 * issuanceAmount, ZERO_BYTE, VALID_CERTIFICATE, { from: operator }));
       });
     });
   });
@@ -1256,27 +1256,27 @@ contract('ERC1400', function ([owner, operator, controller, controller_alternati
 contract('ERC1410', function ([owner, operator, controller, controller_alternative1, controller_alternative2, tokenHolder, recipient, unknown]) {
   // ERC1410 - REDEEM
 
-  describe('ERC1410 - redeem', function () {
+  describe('ERC1410 - burn', function () {
     beforeEach(async function () {
       this.token = await ERC1410.new('ERC1410Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions, tokenHolder, 1000);
     });
-    it('redeem function is disactivated', async function () {
+    it('burn function is disactivated', async function () {
       await assertBalance(this.token, tokenHolder, 1000);
-      await this.token.redeem(500, VALID_CERTIFICATE, { from: tokenHolder });
+      await this.token.burn(500, VALID_CERTIFICATE, { from: tokenHolder });
       await assertBalance(this.token, tokenHolder, 1000);
     });
   });
 
-  // ERC1410 - REDEEMFROM
+  // ERC1410 - OPERATORBURN
 
-  describe('ERC1410 - redeemFrom', function () {
+  describe('ERC1410 - operatorBurn', function () {
     beforeEach(async function () {
       this.token = await ERC1410.new('ERC1410Token', 'DAU', 1, [controller], CERTIFICATE_SIGNER, partitions, tokenHolder, 1000);
     });
-    it('redeemFrom function is disactivated', async function () {
+    it('operatorBurn function is disactivated', async function () {
       await this.token.authorizeOperator(operator, { from: tokenHolder });
       await assertBalance(this.token, tokenHolder, 1000);
-      await this.token.redeemFrom(tokenHolder, 500, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
+      await this.token.operatorBurn(tokenHolder, 500, ZERO_BYTE, VALID_CERTIFICATE, { from: operator });
       await assertBalance(this.token, tokenHolder, 1000);
     });
   });

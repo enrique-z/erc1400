@@ -85,9 +85,9 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
     });
   });
 
-  // TRANSFERWITHDATA
+  // SEND
 
-  describe('transferWithData', function () {
+  describe('send', function () {
     const to = recipient;
     const amount = 10;
     beforeEach(async function () {
@@ -95,7 +95,7 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
       await this.token.setDefaultPartitions([partition1, partition2, partition3], { from: tokenHolder });
     });
     it('transfers the requested amount', async function () {
-      await this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
+      await this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
       const senderBalance = await this.token.balanceOf(tokenHolder);
       assert.equal(senderBalance, issuanceAmount - amount);
 
@@ -104,14 +104,14 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
     });
 
     it('emits a Transfer event', async function () {
-      const { logs } = await this.token.transferWithData(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
+      const { logs } = await this.token.send(to, amount, VALID_CERTIFICATE, { from: tokenHolder });
 
       assert.equal(logs.length, 4);
 
       assert.equal(logs[0].event, 'Checked');
       assert.equal(logs[0].args.sender, tokenHolder);
 
-      assert.equal(logs[1].event, 'TransferWithData');
+      assert.equal(logs[1].event, 'Sent');
       assert.equal(logs[1].args.operator, tokenHolder);
       assert.equal(logs[1].args.from, tokenHolder);
       assert.equal(logs[1].args.to, to);
@@ -133,9 +133,9 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
     });
   });
 
-  // REDEEM
+  // REDEEMBYPARTITION
 
-  describe('redeem', function () {
+  describe('redeemByPartition', function () {
     const redeemAmount = 300;
     beforeEach(async function () {
       await this.token.issueByPartition(partition1, tokenHolder, issuanceAmount, VALID_CERTIFICATE, { from: owner });
@@ -155,7 +155,7 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
       assert.equal(logs[0].event, 'Checked');
       assert.equal(logs[0].args.sender, tokenHolder);
 
-      assert.equal(logs[1].event, 'Redeemed');
+      assert.equal(logs[1].event, 'Burned');
       assert.equal(logs[1].args.operator, tokenHolder);
       assert.equal(logs[1].args.from, tokenHolder);
       assert.equal(logs[1].args.value, redeemAmount);
@@ -195,7 +195,7 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
       assert.equal(logs[0].event, 'Checked');
       assert.equal(logs[0].args.sender, owner);
 
-      assert.equal(logs[1].event, 'Issued');
+      assert.equal(logs[1].event, 'Minted');
       assert.equal(logs[1].args.operator, owner);
       assert.equal(logs[1].args.to, tokenHolder);
       assert.equal(logs[1].args.value, issuanceAmount);
@@ -294,7 +294,7 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
 
               assert.equal(logs.length, 3);
 
-              assert.equal(logs[0].event, 'TransferWithData');
+              assert.equal(logs[0].event, 'Sent');
               assert.equal(logs[0].args.operator, tokenHolder);
               assert.equal(logs[0].args.from, tokenHolder);
               assert.equal(logs[0].args.to, to);
@@ -410,7 +410,7 @@ contract('ERC1400ERC20', function ([owner, operator, controller, tokenHolder, re
 
                 assert.equal(logs.length, 3);
 
-                assert.equal(logs[0].event, 'TransferWithData');
+                assert.equal(logs[0].event, 'Sent');
                 assert.equal(logs[0].args.operator, operator);
                 assert.equal(logs[0].args.from, tokenHolder);
                 assert.equal(logs[0].args.to, to);
