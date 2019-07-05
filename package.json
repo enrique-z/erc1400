@@ -1,16 +1,14 @@
 {
   "name": "ERC1400",
   "version": "0.1.0-dev",
-  "description": "dAuriel's ERC1400 implementation",
+  "description": "CoFi's ERC1400 implementation",
   "files": [
     "contracts",
     "tests"
   ],
   "scripts": {
-    "build:ERC1400ERC20": "solcpiler -i './contracts/token/ERC20/ERC1400ERC20.sol' --solc-version=\"v0.4.24+commit.e67f0147\" --output-artifacts-dir artifacts --insert-file-names imports",
-    "build:ERC1400": "solcpiler -i './contracts/*.sol' --solc-version=\"v0.4.24+commit.e67f0147\" --output-artifacts-dir artifacts --insert-file-names imports",
-    "build:ERC777": "solcpiler -i './contracts/token/ERC777/ERC777.sol' --solc-version=\"v0.4.24+commit.e67f0147\" --output-artifacts-dir artifacts --insert-file-names imports",
-    "build": "yarn run clean && yarn run build:ERC777 && yarn run build:ERC1400 && yarn run build:ERC1400ERC20",
+    "build:ERC1400ERC20": "sol-merger \"./contracts/token/ERC20/ERC1400ERC20.sol\" ./artifacts",
+    "build": "yarn run clean && yarn run build:ERC1400ERC20",
     "clean": "rm -rf artifacts",
     "coverage": "solidity-coverage",
     "env": "node setup.js",
@@ -70,13 +68,13 @@
     "lint-staged": "^8.0.4",
     "openzeppelin-test-helpers": "^0.1.2",
     "remix-ide": "^0.7.4",
-    "solcpiler": "1.0.0-beta.9",
+    "sol-merger": "0.1.4",
     "solidity-coverage": "git+https://github.com/leapdao/solidity-coverage#bb22d28edb700040ddb614bb2a4605f641383ced",
     "solium": "^1.1.8",
     "solium-plugin-zeppelin": "^0.0.2"
   },
   "dependencies": {
-    "contract-certificate-controller": "git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#1db245f092fe87eeba0a12a6fdefb7786e15c823",
+    "contract-certificate-controller": "git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#0bb8de23890d084880a22975a6d250c9fe487081",
     "erc1820": "git+https://github.com/0xjac/ERC1820#885549fe3e9f0fd22444f78532be3dce4ee8a5e2",
     "openzeppelin-solidity": "git+https://github.com/OpenZeppelin/openzeppelin-solidity#77d569d8fafe7f39d44386e0083bda26968e534c",
     "truffle": "5.0.1",
