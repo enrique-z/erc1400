@@ -69,12 +69,12 @@
     "openzeppelin-test-helpers": "^0.1.2",
     "remix-ide": "^0.7.4",
     "sol-merger": "0.1.4",
-    "solidity-coverage": "git+https://github.com/leapdao/solidity-coverage#bb22d28edb700040ddb614bb2a4605f641383ced",
+    "solidity-coverage": "0.6.0",
     "solium": "^1.1.8",
     "solium-plugin-zeppelin": "^0.0.2"
   },
   "dependencies": {
-    "contract-certificate-controller": "git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#0bb8de23890d084880a22975a6d250c9fe487081",
+    "contract-certificate-controller": "git+https://gitlab.com/ConsenSys/client/fr/dauriel/smart-contracts/certificate-controller#34960b51f9bb73b26ca1b66050dfa83a568bb978",
     "erc1820": "git+https://github.com/0xjac/ERC1820#885549fe3e9f0fd22444f78532be3dce4ee8a5e2",
     "openzeppelin-solidity": "git+https://github.com/OpenZeppelin/openzeppelin-solidity#77d569d8fafe7f39d44386e0083bda26968e534c",
     "truffle": "5.0.1",
