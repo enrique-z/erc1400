@@ -9,6 +9,7 @@ import "openzeppelin-solidity/contracts/access/roles/MinterRole.sol";
 import "./IERC1400.sol";
 import "./token/ERC1400Partition/ERC1400Partition.sol";
 import "./token/ERC1400Raw/IERC1400TokensChecker.sol";
+import "./token/ERC1400Raw/IERC1400TokensDocumentManager.sol";
 
 
 /**
@@ -19,14 +20,7 @@ contract ERC1400 is IERC1400, ERC1400Partition, MinterRole {
   
   string constant internal ERC1400_INTERFACE_NAME = "ERC1400Token";
   string constant internal ERC1400_TOKENS_CHECKER = "ERC1400TokensChecker";
-
-  struct Doc {
-    string docURI;
-    bytes32 docHash;
-  }
-
-  // Mapping for token URIs.
-  mapping(bytes32 => Doc) internal _documents;
+  string constant internal ERC1400_TOKENS_DOCUMENT_MANAGER = "ERC1400TokensDocumentManager";
 
   // Indicate whether the token can still be issued by the issuer or not anymore.
   bool internal _isIssuable;
@@ -78,11 +72,13 @@ contract ERC1400 is IERC1400, ERC1400Partition, MinterRole {
    * @return Requested document + document hash.
    */
   function getDocument(bytes32 name) external view returns (string memory, bytes32) {
-    require(bytes(_documents[name].docURI).length != 0); // Action Blocked - Empty document
-    return (
-      _documents[name].docURI,
-      _documents[name].docHash
-    );
+    address documentsImplementation = interfaceAddr(address(this), ERC1400_TOKENS_DOCUMENT_MANAGER);
+
+    if((documentsImplementation != address(0))) {
+      return IERC1400TokensDocumentManager(documentsImplementation).getDocument(name);
+    } else {
+      return("00", ""); // Document management hook not setup
+    }
   }
 
   /**
@@ -93,12 +89,16 @@ contract ERC1400 is IERC1400, ERC1400Partition, MinterRole {
    * @param documentHash Hash of the document [optional parameter].
    */
   function setDocument(bytes32 name, string calldata uri, bytes32 documentHash) external {
-    require(_isController[msg.sender]);
-    _documents[name] = Doc({
-      docURI: uri,
-      docHash: documentHash
-    });
-    emit Document(name, uri, documentHash);
+
+    address documentsImplementation = interfaceAddr(address(this), ERC1400_TOKENS_DOCUMENT_MANAGER);
+
+    if((documentsImplementation != address(0))) {
+      emit Document(name, uri, documentHash);
+      return IERC1400TokensDocumentManager(documentsImplementation).setDocument(msg.sender, name, uri, documentHash);
+    } else {
+      revert("00"); // Document management hook not setup
+    }
+    
   }
 
   /**
@@ -253,7 +253,7 @@ contract ERC1400 is IERC1400, ERC1400Partition, MinterRole {
        return IERC1400TokensChecker(checksImplementation).canTransferByPartition(functionID, partition, operator, from, to, value, data, operatorData);
      }
      else {
-       return(hex"00", "", partition);
+       return(hex"00", "", partition); // Checker hook not setup
      }
    }
 

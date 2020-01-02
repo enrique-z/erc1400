@@ -6948,9 +6948,9 @@ opener@~1.4.0:
   resolved "https://registry.yarnpkg.com/opener/-/opener-1.4.3.tgz#5c6da2c5d7e5831e8ffa3964950f8d6674ac90b8"
   integrity sha1-XG2ixdflgx6P+jlklQ+NZnSskLg=
 
-"openzeppelin-solidity@git+https://github.com/OpenZeppelin/openzeppelin-solidity#77d569d8fafe7f39d44386e0083bda26968e534c":
-  version "2.1.3"
-  resolved "git+https://github.com/OpenZeppelin/openzeppelin-solidity#77d569d8fafe7f39d44386e0083bda26968e534c"
+"openzeppelin-solidity@git+https://github.com/OpenZeppelin/openzeppelin-solidity#67a71519d32d413aae17d89ae1d9ff1963226704":
+  version "2.4.0"
+  resolved "git+https://github.com/OpenZeppelin/openzeppelin-solidity#67a71519d32d413aae17d89ae1d9ff1963226704"
 
 openzeppelin-test-helpers@^0.1.2:
   version "0.1.5"
